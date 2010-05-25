@@ -1,0 +1,849 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE project [ <!ENTITY common SYSTEM "../../etc/common.xml"> ]>
+
+<project name="regression-test" default="help" basedir="../../">
+
+    <property name="jacorb.home" value="${basedir}" />
+    <property name="testdir" value="${basedir}/test/regression" />
+    <property name="dirs.base" value="${testdir}" />
+
+    <property name="idl" value="${testdir}/idl" />
+    <property name="lib" value="${basedir}/lib" />
+
+    <property file="${basedir}/test/regression/build.properties" />
+
+    <property name="jacorb.test.shouldantfail" value="true" />
+
+    &common;
+
+    <!-- ==================================================== -->
+    <!--             JacORB Tests build file                  -->
+    <!-- ==================================================== -->
+    <target name="help">
+        <exec executable="java" outputproperty="OUTPUT">
+            <arg line="-classpath '${java.class.path}' org.apache.tools.ant.Main -logger org.apache.tools.ant.NoBannerLogger -projecthelp -buildfile ${basedir}/test/regression/build.xml" />
+        </exec>
+        <echo message="${OUTPUT}" />
+    </target>
+
+    <target name="test-init" depends="init,load-taskdef">
+        <path id="test.classpath.libs">
+            <fileset dir="${testdir}/lib">
+                <include name="*.jar" />
+            </fileset>
+        </path>
+
+        <path id="test.classpath.compile">
+            <pathelement location="${testdir}/classes" />
+
+            <path refid="test.classpath.libs" />
+
+            <path refid="path.base" />
+        </path>
+
+        <path id="test.classpath.run">
+            <pathelement location="${testdir}/classes" />
+
+            <pathelement location="${testdir}/resources" />
+
+            <path refid="test.classpath.libs" />
+
+            <!-- don't add the JacORB classes here.     -->
+            <!-- they'll be located by the testlauncher -->
+        </path>
+
+        <!-- include emma tasks for code coverage -->
+        <path id="emma.lib">
+            <pathelement location="${testdir}/lib/emma.jar"/>
+            <pathelement location="${testdir}/lib/emma_ant.jar"/>
+        </path>
+
+        <taskdef resource="emma_ant.properties"
+                 classpathref="emma.lib"/>
+
+        <!-- Configuration properties for rmi depending upon JDK version -->
+        <property name="rmic.iiop" value="yes" />
+        <property name="rmic.iiopopts" value="-poa" />
+        <available classname="com.sun.corba.se.internal.iiop.ShutdownUtilDelegate"
+               property="rmi.ShutdownUtilDelegate" />
+        <available classname="com.sun.corba.se.internal.iiop.ShutdownUtilDelegate"
+               property="rmi.jvmarg"
+               value="-Djavax.rmi.CORBA.UtilClass=org.jacorb.test.orb.rmi.FixSunDelegateBug" />
+        <condition property="rmi.jvmarg" value="-D">
+            <not>
+                <available classname="com.sun.corba.se.internal.iiop.ShutdownUtilDelegate" />
+            </not>
+        </condition>
+        <available classname="com.sun.corba.se.internal.iiop.ShutdownUtilDelegate"
+               property="use.jdk.orb" />
+        <available classname="com.ibm.CORBA.iiop.ORB"
+               property="use.jdk.orb" />
+
+
+        <macrodef name="jacorb-rmic">
+            <attribute name="classname" />
+
+            <sequential>
+                <rmic base="${classdir}"
+                  classname="@{classname}"
+                  verify="${rmic.verify}"
+                  iiop="${rmic.iiop}"
+                  iiopopts="${rmic.iiopopts}"
+                  debug="${rmic.debug}"
+                  sourcebase="${src}/generated">
+                </rmic>
+            </sequential>
+        </macrodef>
+
+        <macrodef name="process-idl">
+            <attribute name="includes" />
+            <attribute name="ami" default="false"/>
+
+            <sequential>
+                <jacidl
+                   srcdir="${idl}"
+                   ami_callback="@{ami}"
+                   destdir="${src}/generated"
+                   includepath="${basedir}/idl/omg"
+                   includes="@{includes}"
+                   helpercompat="jacorb"/>
+            </sequential>
+        </macrodef>
+
+    </target>
+
+    <!-- =================================================== -->
+    <!-- build and test the JacORB regression test framework -->
+    <!-- =================================================== -->
+
+    <target name="regression"
+            depends="test-init, regression-build, regression-test, regression-junit"
+            description="build/test the JacORB regression test framework (org.jacorb.test.common.*)"/>
+
+    <target name="regression-build" unless="NO_BUILD">
+        <jacorb-javac
+            javac-includes="org/jacorb/test/common/**/*.java"
+              javac-classpathref="test.classpath.compile" />
+    </target>
+
+    <target name="regression-test" unless="NO_BUILD" >
+        <jacorb-javac
+            javac-includes="org/jacorb/test/ant/**/*.java,org/jacorb/test/jaco/**/*.java"
+              javac-classpathref="test.classpath.compile" />
+    </target>
+
+    <target name="regression-junit" >
+        <!-- there's no point in continuing here if these tests fail -->
+        <!-- in that case the regression test framework is broken    -->
+        <junit fork="true" haltonerror="true" haltonfailure="true" >
+            <formatter type="plain" usefile="false"/>
+
+            <batchtest>
+                <fileset dir="${src}">
+                    <include name="org/jacorb/test/ant/**/*Test.java" />
+                    <include name="org/jacorb/test/jaco/**/*Test.java" />
+                </fileset>
+            </batchtest>
+
+            <classpath>
+                <pathelement location="${classdir}"/>
+                <pathelement location="${testdir}/lib/ant-testutil.jar" />
+                <pathelement location="${testdir}/resources" />
+            </classpath>
+
+            <sysproperty key="jacorb.home" value="${basedir}"/>
+        </junit>
+    </target>
+
+    <!-- ==================================================== -->
+    <!--             compile and run tests                    -->
+    <!-- ==================================================== -->
+
+    <target name="build-all" depends="test-init, regression, idl, compile-src, build-rmi, compile-src-notification, instrument" />
+
+    <target name="compile-src-notification" unless="NO_BUILD">
+        <jacorb-javac
+              javac-includes="org/jacorb/test/notification/**/*.java"
+              javac-excludes="org/jacorb/test/notification/plugins/**,
+                              org/jacorb/test/notification/jmx/**"
+              javac-classpathref="test.classpath.compile" />
+    </target>
+
+    <target name="compile-src" unless="NO_BUILD">
+        <jacorb-javac
+            javac-includes="**/*.java"
+            javac-excludes="generated/**,
+                            **/RMITestServant.java,
+                            org/jacorb/test/notification/**,
+                            org/jacorb/test/jmx/**"
+            javac-classpathref="test.classpath.compile">
+            <javac-bootclasspath>
+            </javac-bootclasspath>
+        </jacorb-javac>
+    </target>
+
+    <target name="build-rmi-fixjdk14" if="rmi.ShutdownUtilDelegate" >
+        <copy file="${src}/org/jacorb/test/orb/rmi/FixSunDelegateBug.java.14"
+          tofile="${src.generated}/org/jacorb/test/orb/rmi/FixSunDelegateBug.java" />
+
+        <jacorb-javac
+              javac-includes="org/jacorb/test/orb/rmi/FixSunDelegateBug.java"
+              javac-classpathref="test.classpath.compile" />
+    </target>
+
+    <target name="build-rmi" depends="build-rmi-fixjdk14" unless="NO_BUILD">
+        <jacorb-rmic
+          classname="org.jacorb.test.orb.rmi.RMITestImpl" />
+
+        <jacorb-rmic
+              classname="org.jacorb.test.bugs.bugjac149.RemoteIPingImpl" />
+
+        <jacorb-javac javac-includes="**/RMITestServant.java" javac-classpathref="test.classpath.compile" />
+    </target>
+
+    <target name="run" depends="test-init,
+                                build-all,
+                                instrument,
+                                jacunit" />
+
+    <target name="jacunit" depends="test-init,
+                                    jacunit-taskdef,
+                                    jacunit-checkargs,
+                                    jacunit-run,
+                                    jacunit-junitreport-txt,
+                                    jacunit-junitreport-html,
+                                    jacunit-coverage-report,
+                                    jacunit-clean,
+                                    jacunit-checkfail" />
+
+    <target name="jacunit-taskdef" depends="test-init" >
+        <taskdef name="jacunit" classname="org.jacorb.test.common.launch.TestLauncher" >
+            <classpath>
+                <path refid="test.classpath.run" />
+            </classpath>
+        </taskdef>
+    </target>
+
+    <target name="jacunit-checkargs" depends="test-init">
+        <tstamp>
+            <format property="jacorb.test.testid" pattern="yyyy-MM-dd.HH-mm-ss" />
+        </tstamp>
+
+        <!-- by default create an unique directory for each testrun -->
+        <!-- the name is based on a timestamp                       -->
+        <!-- is the property jacorb.test.outputfile.testname is set -->
+        <!-- tests will be placed in the directory output           -->
+        <condition property="jacorb.test.outdir" value="${testdir}/output" >
+            <isset property="jacorb.test.outputfile.testname" />
+        </condition>
+
+        <property name="jacorb.test.outdir" value="${testdir}/output/${jacorb.test.testid}" />
+
+        <mkdir dir="${jacorb.test.outdir}"/>
+        <delete failonerror="false" includeemptydirs="true">
+            <fileset dir="${jacorb.test.outdir}">
+                <include name="**" />
+            </fileset>
+        </delete>
+
+        <condition property="jacorb.test.ssl" value="true">
+            <isset property="TEST_SSL"/>
+        </condition>
+
+        <property name="jacorb.test.ssl" value="false"/>
+
+        <condition property="jacorb.test.imr" value="true">
+            <isset property="TEST_IMR"/>
+        </condition>
+
+        <property name="jacorb.test.imr" value="false"/>
+
+        <property name="jacorb.test.junitHtmlDir" value="${jacorb.test.outdir}/html" />
+
+        <property name="jacorb.test.coverage.dir" value="${jacorb.test.outdir}/coverage" />
+    </target>
+
+    <target name="jacunit-fileset-check" unless="jacorb.test.fileset-isset" >
+        <fail unless="jacorb.test" message="either need to define the fileset jacorb.test.fileset or set the property jacorb.test" />
+
+        <fileset id="jacorb.test.fileset" dir="${src}" includes="${jacorb.test}.java" />
+    </target>
+
+    <target name="jacunit-run" depends="jacunit-fileset-check" >
+        <!-- By default, we don't run coverage-->
+        <property name="jacorb.test.coverage" value="false"/>
+
+        <condition property="jacorb.test.coverage.process" value="true">
+            <not>
+                <equals arg1="${jacorb.test.coverage}" arg2="false"/>
+            </not>
+        </condition>
+
+        <!-- By default, we do run naming and notification tests -->
+        <property name="jacorb.exclude-services" value="false"/>
+        <property name="jacorb.test.verbose" value="false" />
+        <!-- timeout until a server comes up -->
+        <property name="jacorb.test.timeout" value="15000" />
+        <property name="jacorb.test.maxmemory" value="256m" />
+
+        <property name="jacorb.test.serverversion" value="cvs" />
+        <property name="jacorb.test.clientversion" value="cvs" />
+
+        <property name="jacorb.test.global.timeout" value="0" />
+
+        <property name="_fileset.debug" refid="jacorb.test.fileset" />
+        <echo level="verbose">
+            Running Tests: ${_fileset.debug}
+        </echo>
+
+        <jacunit
+            outdir="${jacorb.test.outdir}"
+            coverage="${jacorb.test.coverage}"
+            ssl="${jacorb.test.ssl}"
+            imr="${jacorb.test.imr}"
+            testtimeout="${jacorb.test.global.timeout}"
+            timeout="${jacorb.test.timeout}"
+            maxmemory="${jacorb.test.maxmemory}"
+            verbose="${jacorb.test.verbose}"
+            errorproperty="testFailed"
+            testdir="${testdir}"
+            clientversion="${jacorb.test.clientversion}"
+            serverversion="${jacorb.test.serverversion}"
+            showoutput="true">
+
+            <batchtest>
+                <fileset refid="jacorb.test.fileset" />
+            </batchtest>
+
+            <formatter classname="org.jacorb.test.common.JUnitTestFormatter" usefile="false" if="jacorb.test.verbose"/>
+            <formatter type="brief" usefile="false" />
+            <formatter type="plain" extension="-raw.txt" />
+            <formatter type="xml" if="jacorb.test.junitreport.html.process" />
+
+            <!--
+                this classpath is used for the execution
+                of the tests. the bootclasspath for the
+                client/server side is determined by the
+                launcher depending on the setting of
+                jacorb.test.client.version and
+                jacorb.test.server.version.
+                the classpath is also passed to the
+                launchers which may use it to start
+                their process
+            -->
+            <classpath>
+                <path refid="test.classpath.run" />
+
+                <!--
+                    don't add java.class.path here as (under the nightly build) it contains the RTE
+                    of the JVM ant runs in. so the RTE would end up in the classpath which is used by
+                    the launchers which might want to set the classpath differently.
+                -->
+
+                <!--
+                    NOTE: this is kind of a hack here. usually ${ant.home}/lib would be preferable here
+                    but the nightly build sets up ant.home in a non standard way and puts the jars
+                    directly under ant.home. so we have to recursively search all jars to ensure it
+                    works with plain ant AND the nightly build
+                -->
+                <fileset dir="${ant.home}">
+                    <include name="**/*.jar" />
+                </fileset>
+            </classpath>
+
+            <jvmarg name="EXCLUDE_SERVICES" value="${jacorb.exclude-services}" />
+        </jacunit>
+    </target>
+
+    <target name="jacunit-checkfail" >
+        <condition property="_shouldFail">
+            <and>
+                <isset property="testFailed" />
+                <not>
+                    <equals arg1="${jacorb.test.shouldantfail}" arg2="false" />
+                </not>
+            </and>
+        </condition>
+        <fail if="_shouldFail" message="At least one JUnit test failed. check log for details."/>
+
+        <echo>
+The results of the testrun have been placed in:
+${jacorb.test.outdir}
+        </echo>
+    </target>
+
+    <target name="jacunit-clean" depends="jacunit-checkargs">
+        <delete>
+            <fileset dir="${jacorb.test.outdir}">
+                <include name="**/*-raw.*" />
+                <include name="**/*.xml" />
+                <include name="header.txt" />
+                <include name="TESTS-TestSuites.xml" />
+            </fileset>
+        </delete>
+    </target>
+
+    <target name="jacunit-junitreport-html" depends="jacunit-checkargs" if="jacorb.test.junitreport.html.process">
+        <junitreport todir="${jacorb.test.outdir}">
+            <fileset dir="${jacorb.test.outdir}">
+                <include name="**/*.xml"/>
+                <exclude name="**/TESTS-TestSuites.xml" />
+            </fileset>
+            <report format="frames" todir="${jacorb.test.junitHtmlDir}"/>
+        </junitreport>
+    </target>
+
+    <target name="jacunit-junitreport-txt" depends="jacunit-checkargs">
+        <copy todir="${jacorb.test.outdir}" >
+            <fileset dir="${jacorb.test.outdir}" includes="**/*-raw.txt" />
+            <globmapper from="*-raw.txt" to="*.txt" />
+            <filterchain>
+                <concatfilter prepend="${jacorb.test.outdir}/header.txt"/>
+            </filterchain>
+        </copy>
+    </target>
+
+    <target name="jacunit-coverage-report" depends="jacunit-checkargs" if="jacorb.test.coverage.process" >
+        <path id="path.src" >
+            <pathelement location="${basedir}/src" />
+            <pathelement location="${basedir}/src/generated" />
+        </path>
+
+        <property name="dir.combined" value="${jacorb.test.coverage.dir}/coverage-combined" />
+        <property name="dir.client" value="${jacorb.test.coverage.dir}/coverage-client/" />
+        <property name="dir.server" value="${jacorb.test.coverage.dir}/coverage-server" />
+
+        <mkdir dir="${dir.combined}" />
+        <mkdir dir="${dir.client}" />
+        <mkdir dir="${dir.server}" />
+
+        <emma>
+            <report sourcepathref="path.src"
+                    columns="name,line,method,class"
+                    sort="+name">
+                <fileset dir="${basedir}">
+                    <include name="coverage.em"/>
+                </fileset>
+
+                <fileset dir="${jacorb.test.outdir}" >
+                    <include name="coverage-client.ec"/>
+                    <include name="coverage-server.ec"/>
+                </fileset>
+                <html outfile="${dir.combined}/index.html"/>
+            </report>
+
+            <report sourcepathref="path.src"
+                    columns="name,line,method,class"
+                    sort="+name">
+                <fileset dir="${basedir}">
+                    <include name="coverage.em"/>
+                </fileset>
+
+                <fileset dir="${jacorb.test.outdir}" >
+                    <include name="coverage-client.ec"/>
+                </fileset>
+
+                <html outfile="${dir.client}/index.html"/>
+            </report>
+
+            <report sourcepathref="path.src"
+                    columns="name,line,method,class"
+                    sort="+name">
+                <fileset dir="${basedir}">
+                    <include name="coverage.em"/>
+                </fileset>
+
+                <fileset dir="${jacorb.test.outdir}" >
+                    <include name="coverage-server.ec"/>
+                </fileset>
+
+                <html outfile="${dir.server}/index.html"/>
+            </report>
+        </emma>
+
+        <echo file="${jacorb.test.coverage.dir}/index.html" >
+            &lt;html&gt;
+            &lt;a href="coverage-combined/index.html" &gt; coverage-combined &lt;/a&gt;
+            &lt;br/&gt;
+            &lt;a href="coverage-client/index.html" &gt; coverage-client &lt;/a&gt;
+            &lt;br/&gt;
+            &lt;a href="coverage-server/index.html" &gt; coverage-server &lt;/a&gt;
+            &lt;/html&gt;
+        </echo>
+    </target>
+
+    <!-- ==================================================== -->
+    <!--                  generate idl                        -->
+    <!-- ==================================================== -->
+
+    <target name="idl" unless="NO_BUILD">
+        <antcall target="idl-wrapped" />
+    </target>
+
+    <target name="idl-wrapped"
+            depends="test-init,
+                    idl-tests,
+                    idl-anyserver,
+                    idl-basicserver,
+                    idl-arrayserver,
+                    idl-codesetserver,
+                    idl-charserver,
+                    idl-longlongseqserver,
+                    idl-callbackserver,
+                    idl-timingserver,
+                    idl-syncscopeserver,
+                    idl-connectiontimeout,
+                    idl-bidir,
+                    idl-imr,
+                    idl-iiopaddress,
+                    idl-recursive,
+                    idl-notification,
+                    idl-notification-typed,
+                    idl-value,
+                    idl-value-test,
+                    idl-exception,
+                    idl-shutdown,
+                    idl-dii,
+                    idl-bugs,
+                    idl-transport-current-server" />
+
+    <target name="idl-transport-current-server">
+         <process-idl includes="TransportCurrentServer.idl" />
+    </target>
+
+    <target name="idl-anyserver">
+          <process-idl includes="AnyServer.idl"/>
+    </target>
+
+    <target name="idl-tests">
+        <process-idl includes="Tests.idl" />
+    </target>
+
+    <target name="idl-basicserver">
+        <process-idl includes="BasicServer.idl" />
+    </target>
+
+    <target name="idl-arrayserver">
+       <process-idl includes="ArrayServer.idl" />
+    </target>
+
+    <target name="idl-codesetserver">
+        <process-idl includes="CodesetServer.idl" />
+      </target>
+
+    <target name="idl-charserver">
+        <process-idl includes="CharServer.idl" />
+    </target>
+
+    <target name="idl-longlongseqserver">
+        <process-idl includes="LongLongSeqServer.idl" />
+    </target>
+
+    <target name="idl-callbackserver">
+        <process-idl includes="CallbackServer.idl" ami="true"/>
+    </target>
+
+    <target name="idl-timingserver">
+        <process-idl includes="TimingServer.idl" ami="true" />
+    </target>
+
+    <target name="idl-syncscopeserver">
+        <process-idl includes="SyncScopeServer.idl" ami="true" />
+    </target>
+
+    <target name="idl-connectiontimeout">
+        <process-idl includes="ConnectionTimeout.idl" />
+    </target>
+
+    <target name="idl-bidir">
+        <process-idl includes="BiDir.idl" />
+    </target>
+
+    <target name="idl-iiopaddress">
+        <process-idl includes="IIOPAddress.idl" />
+    </target>
+
+   <target name="idl-imr">
+           <process-idl includes="IMRTest.idl" />
+   </target>
+
+    <target name="idl-recursive">
+        <process-idl includes="RecursiveParamServer.idl" />
+    </target>
+
+    <target name="idl-notification">
+        <process-idl includes="Notification.idl" />
+    </target>
+
+    <target name="idl-notification-typed">
+        <process-idl includes="TypedNotification.idl" />
+    </target>
+
+    <target name="idl-value">
+        <process-idl includes="value.idl" />
+    </target>
+
+    <target name="idl-value-test">
+          <process-idl includes="ValueTest.idl" />
+    </target>
+
+    <target name="idl-exception">
+        <process-idl includes="ExceptionServer.idl" />
+    </target>
+
+    <target name="idl-shutdown">
+        <process-idl includes="ShutdownServer.idl" />
+    </target>
+
+    <target name="idl-dii">
+        <process-idl includes="diiserver.idl" />
+    </target>
+
+    <target name="idl-bugs">
+        <process-idl includes="bug*.idl"/>
+    </target>
+
+    <!-- ==================================================== -->
+    <!--                  code coverage                       -->
+    <!-- ==================================================== -->
+
+    <target name="instrument" depends="test-init" >
+        <pathconvert pathsep="," property="_generated.sources">
+            <path>
+                <fileset dir="${basedir}/src/generated">
+                    <include name="**/*.java" />
+                </fileset>
+            </path>
+
+            <mapper type="package" from="${basedir}/src/generated/*.java" to="*" />
+        </pathconvert>
+
+        <emma>
+            <instr instrpath="${basedir}/classes"
+             mode="copy"
+             outdir="${basedir}/classes-instrumented"
+             outfile="${basedir}/coverage.em">
+                <filter excludes="${_generated.sources}"  />
+                <filter excludes="org.omg.*"/>
+                <filter excludes="Cos*"/>
+                <filter excludes="org.jacorb.ir.gui*"/>
+                <filter excludes="org.jacorb.naming.namemanager.*"/>
+                <filter excludes="org.jacorb.poa.gui.*"/>
+                <filter excludes="org.jacorb.trading.*"/>
+            </instr>
+        </emma>
+    </target>
+
+    <target name="show">
+        <echoproperties/>
+    </target>
+
+
+    <!-- ==================================================== -->
+    <!--                  run all tests                       -->
+    <!-- ==================================================== -->
+
+    <target name="run-all-failed">
+       <fileset id="failed.tests.txt" dir="${jacorb.test.outdir}" >
+          <include name="TEST*.txt"/>
+          <exclude name="TEST-org.jacorb.test.AllTest.txt" />
+
+          <or>
+             <contains text="FAILED" />
+             <contains text="Caused an Error" />
+          </or>
+       </fileset>
+
+       <pathconvert property="jacorb.test.pattern" refid="failed.tests.txt">
+          <chainedmapper>
+             <flattenmapper />
+             <unpackagemapper from="TEST-*.txt" to="*.class" />
+          </chainedmapper>
+       </pathconvert>
+
+       <echo message="re running tests: ${jacorb.test.pattern}" />
+
+       <antcall target="run">
+          <param name="jacorb.test.pattern" value="${jacorb.test.pattern}" />
+       </antcall>
+    </target>
+
+
+    <target name="run-all-with-coverage" >
+        <antcall target="run">
+            <param name="jacorb.test" value="org/jacorb/test/AllTest" />
+            <param name="jacorb.test.coverage" value="true" />
+        </antcall>
+    </target>
+
+    <target name="run-all" description="Run and build all Jacorb tests. For any run-all-*&#13;&#10;
+                            test targets the following -D parameters are available:&#13;&#10;
+                            jacorb.test.ssl=true&#13;&#10;
+                                (enable SSL support for client/server tests)&#13;&#10;
+                            jacorb.test.coverage=true&#13;&#10;
+                                (generate test coverage using emma)&#13;&#10;
+                            jacorb.test.outputfile.testname=true&#13;&#10;
+                                (place output directly in&#13;&#10;
+                                 the directory output instead of a timestamped dir)&#13;&#10;
+                            jacorb.test.verbose=true&#13;&#10;
+                                (enable verbose test output)&#13;&#10;
+                            NO_BUILD=true&#13;&#10;
+                                (skips idl generation/idl compilation)&#13;&#10;
+                            jacorb.test.junitreport.html.process=true&#13;&#10;
+                                (generate html report for the JUnit tests)" >
+        <antcall target="run">
+            <param name="jacorb.test" value="org/jacorb/test/AllTest" />
+        </antcall>
+    </target>
+
+    <target name="run-separate-init" depends="test-init">
+        <property name="jacorb.test.fileset.include" value="**/*Test.java" />
+
+        <fileset id="jacorb.test.fileset" dir="${src}" >
+            <include name="${jacorb.test.fileset.include}" />
+
+            <exclude name="generated/**" />
+            <exclude name="**/AllTest.java"/>
+            <exclude name="**/PackageTest.java"/>
+            <exclude name="**/JacUnitTest.*" />
+            <exclude name="**/notification/plugins/**" />
+            <exclude name="**/notification/perf/**" />
+            <exclude name="**/notification/jmx/**" />
+            <exclude name="**/test/jmx/**" />
+            <exclude name="org/jacorb/test/common/**" />
+        </fileset>
+
+        <property name="jacorb.test" value="ignored" />
+        <property name="jacorb.test.global.timeout" value="60000" />
+        <property name="jacorb.test.fileset-isset" value="true" />
+    </target>
+
+    <target name="run-separate" depends="run-separate-init, run" />
+
+    <!-- ==================================================== -->
+    <!--                  run idl tests                       -->
+    <!-- ==================================================== -->
+
+    <target name="run-all-idl"
+          description="Run all Jacorb tests in the idl package">
+       <antcall target="run">
+          <param name="jacorb.test" value="org/jacorb/test/idl/AllTest" />
+       </antcall>
+    </target>
+
+
+    <!-- ==================================================== -->
+    <!--                  run bug tests                       -->
+    <!-- ==================================================== -->
+
+
+    <target name="run-all-bugs"
+          description="Run all Jacorb tests in the bugs package">
+        <antcall target="run">
+            <param name="jacorb.test" value="org/jacorb/test/bugs/AllTest" />
+        </antcall>
+    </target>
+
+
+    <!-- ==================================================== -->
+    <!--                  run orb/poa tests                   -->
+    <!-- ==================================================== -->
+
+
+    <target name="run-all-orb"
+          description="Run all Jacorb tests in the orb package">
+        <antcall target="run">
+            <param name="jacorb.test" value="org/jacorb/test/orb/AllTest" />
+        </antcall>
+    </target>
+
+
+    <target name="run-all-poa"
+          description="Run all Jacorb tests in the poa package">
+        <antcall target="run">
+            <param name="jacorb.test" value="org/jacorb/test/poa/AllTest" />
+        </antcall>
+    </target>
+
+
+    <!-- ==================================================== -->
+    <!--                  run rmi tests                       -->
+    <!-- ==================================================== -->
+
+
+    <target name="run-all-rmi"
+          description="Run all Jacorb tests in the rmi package">
+        <antcall target="run">
+            <param name="jacorb.test" value="org/jacorb/test/orb/rmi/AllTest" />
+        </antcall>
+    </target>
+
+
+    <!-- ==================================================== -->
+    <!--                 run dynany tests                     -->
+    <!-- ==================================================== -->
+
+
+    <target name="run-all-dynany"
+          description="Run all Jacorb tests in the dynany package">
+        <antcall target="run">
+            <param name="jacorb.test" value="org/jacorb/test/orb/dynany/AllTest" />
+        </antcall>
+    </target>
+
+    <!-- ==================================================== -->
+    <!--                 run dii tests                        -->
+    <!-- ==================================================== -->
+
+    <target name="run-all-dii"
+          description="Run all Jacorb tests in the dii package">
+        <antcall target="run">
+            <param name="jacorb.test" value="org/jacorb/test/dii/AllTest" />
+        </antcall>
+    </target>
+
+
+    <target name="run-all-imr" description="run all ImR tests" >
+        <antcall target="run">
+            <param name="jacorb.test" value="org/jacorb/test/imrutility/imr/AllTest" />
+        </antcall>
+    </target>
+
+        <!-- ==================================================== -->
+        <!--                 run transport tests                  -->
+        <!-- ==================================================== -->
+
+
+        <target name="run-all-transport-current"
+              description="Run all Jacorb tests in the tc (TransportCurrent) package">
+            <antcall target="run">
+                <param name="jacorb.test" value="org/jacorb/test/transport/AllTest" />
+            </antcall>
+        </target>
+
+    <!-- ==================================================== -->
+    <!--                 run notification tests               -->
+    <!-- ==================================================== -->
+
+
+    <target name="run-all-notification"
+          description="Run all Jacorb tests in the notification package">
+        <antcall target="run">
+            <param name="jacorb.test" value="org/jacorb/test/notification/AllTest" />
+        </antcall>
+    </target>
+
+    <!-- ==================================================== -->
+    <!--                   clean up                           -->
+    <!-- ==================================================== -->
+
+    <target name="clean" depends="test-init" description="Remove all generated source files and class files">
+        <delete failonerror="false" includeemptydirs="true">
+            <fileset dir="${classdir}" includes="**/*" />
+            <fileset dir="${src}/generated" includes="**/*" />
+            <fileset dir="${basedir}/classes-instrumented" includes="**/*"/>
+            <fileset file="${src}/org/jacorb/test/orb/rmi/FixSunDelegateBug.java"/>
+        </delete>
+    </target>
+</project>

@@ -1,0 +1,32 @@
+module org {
+
+  module jacorb {
+
+    module test {
+
+      interface Sample
+      {
+        long ping (in long data);
+      };
+
+      interface IIOPAddressServer
+      {
+        void setSocketAddress (in string host, in long port);
+        void setSocketProtAddr (in string protocol_address);
+        void clearSocketAddress();
+        
+        void setIORAddress (in string host, in long port);
+        void setIORProtAddr (in string protocol_address);
+        void clearIORAddress();
+        
+        void addAlternateAddress (in string host, in long port);
+        void clearAlternateAddresses();
+
+        Sample getObject();
+      };
+
+    };
+
+  };
+
+};

@@ -1,0 +1,167 @@
+// Tests.idl contains examples of various IDL types
+
+module org
+{
+   module jacorb
+   {
+      module test
+      {
+         // Test Forward Declarations
+         interface TestForwardDecl;
+         interface TestForwardDecl
+         {
+         };
+         interface TestForwardDecl;
+
+         // bound for Sequences and Arrays
+         const long Bound = 10;
+
+         // example empty Exception
+         exception EmptyException {};
+
+         // example non-empty Exception
+         exception NonEmptyException
+         {
+            long field1;
+            string field2;
+         };
+
+         // example unbounded Sequence
+         typedef sequence< long > UnboundedData;
+
+         // example bounded Sequence
+         typedef sequence< long, Bound > BoundedData;
+
+         // example of an Array
+         typedef long ArrayType[Bound];
+
+         // example Enum type
+         enum EnumType {first, second, third, fourth, fifth};
+
+         // example Struct type
+         struct StructType
+         {
+            long field1;
+            string field2;
+         };
+
+         // example Union type with a default case (enumeration discriminator)
+         union UnionDefaultType switch (EnumType)
+         {
+            case first: long win;
+            case second: short place;
+            case third:
+            case fourth: octet show;
+            default: boolean other;
+         };
+
+         // example Union type without a default case (enumeration discriminator)
+         union UnionNoDefaultType switch (EnumType)
+         {
+            case first: long win;
+            case second: short place;
+            case third:
+            case fourth: octet show;
+         };
+
+         // example Union type that uses full range of discriminator values
+         // (enumeration discriminator)
+         union UnionFullRangeType switch (EnumType)
+         {
+            case first: long win;
+            case second: short place;
+            case third:
+            case fourth:
+            case fifth: octet show;
+         };
+
+         // example Union type with a default case (boolean discriminator)
+         union UnionDefaultBooleanType switch (boolean)
+         {
+            case FALSE: long win;
+            default: boolean other;
+         };
+
+         // example Union type without a default case (boolean discriminator)
+         union UnionNoDefaultBooleanType switch (boolean)
+         {
+            case FALSE: long win;
+         };
+
+         // example Union type with a default case (char discriminator)
+         union UnionDefaultCharType switch (char)
+         {
+            case 'a': long win;
+            case 'b': octet doit;
+            case 'c': double place;
+            default: boolean other;
+         };
+
+         // example Union type without a default case (char discriminator)
+         union UnionNoDefaultCharType switch (char)
+         {
+            case 'a': long win;
+            case 'b':  octet doit;
+            case 'c':  boolean other;
+         };
+
+         // example Union type with a default case (integer discriminator)
+         union UnionDefaultShortType switch (short)
+         {
+            case 0: long win;
+            case 1: short place;
+            case 2:
+            case 3: octet show;
+            default: boolean other;
+         };
+
+         // example Union type without a default case (integer discriminator)
+         union UnionNoDefaultShortType switch (short)
+         {
+            case 0: long win;
+            case 1: short place;
+            case 2:
+            case 3: octet show;
+         };
+
+         // example Union type with a default case (integer discriminator)
+         union UnionDefaultLongType switch (long)
+         {
+            case 0: long win;
+            case 1: short place;
+            case 2:
+            case 3: octet show;
+            default: boolean other;
+         };
+
+         // example Union type without a default case (integer discriminator)
+         union UnionNoDefaultLongType switch (long)
+         {
+            case 0: long win;
+            case 1: short place;
+            case 2:
+            case 3: octet show;
+         };
+
+         // example Union type with a default case (integer discriminator)
+         union UnionDefaultLongLongType switch (long long)
+         {
+            case 0: long win;
+            case 1: short place;
+            // multiple case labels per alternative do not work
+            // with long long discriminators due to an IDL compiler bug
+            // AS, 2006-09-17
+            case 2: octet show;
+            default: boolean other;
+         };
+
+         // example Union type without a default case (integer discriminator)
+         union UnionNoDefaultLongLongType switch (long long)
+         {
+            case 0: long win;
+            case 1: short place;
+            case 2: octet show;
+         };
+      };
+   };
+};

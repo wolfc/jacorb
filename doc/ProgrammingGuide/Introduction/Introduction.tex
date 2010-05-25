@@ -1,0 +1,178 @@
+%
+% $Id: Introduction.tex,v 1.10 2006-07-26 12:37:04 nick.cross Exp $
+%
+
+This document gives an introduction to programming distributed
+applications with JacORB, a free Java object request broker. JacORB
+comes with full source code, a couple of CORBA Object Service
+implementations, and a number of example programs.  The JacORB version
+described in this document is JacORB \JacORBVersion.
+
+\section{A Brief CORBA introduction}
+
+CORBA models distributed resources as objects that provide a
+well-defined interface. CORBA lets you invoke services through remote
+invocations (RPCs). Since the transfer syntax for sending messages to
+objects is strictly defined, it is possible to exchange requests and
+replies between processes running program written in arbitrary
+programming languages and hosted on arbitrary hardware and operating
+systems. Target addresses are represented as {\em Interoperable Object
+References} (IORs), which contain transport addresses as well as
+identifiers needed to dispatch incoming messages to implementations.
+
+Interfaces to remote objects are described declaratively in an
+programming language-independent {\em Interface Definition Language}
+(IDL), which can be used to automatically generate language-specific
+stub code.
+
+It is important to stress that:
+\begin{itemize}
+\item CORBA objects as seen by clients are abstract entities. Their
+  behavior is implemented by artifacts in potentially arbitrary, even
+  non-OO languages. These artifacts are called {\em servants} in CORBA
+  terminology. A servant is {\em not} the same as the object. Servants
+  require an ORB implementation to maintain the relationship to
+  objects and to mediate requests and responses.
+\item CORBA objects achieve location transparency, i.e., clients need
+  not be (and generally are not) aware of the actual target hosts
+  where servants reside. However, complete distribution transparency
+  is not achieved in the sense that clients would not notice a
+  difference between a local function call and a remote CORBA
+  invocation. This is due to factors such as increased latency,
+  network error conditions, and CORBA-specific initialization code in
+  applications, and data type mappings.
+\end{itemize}
+
+Please see \cite{Brose2001a,Siegel2000, Vinoski1997} for more
+information and additional details, and \cite{Henning1999} for
+advanced issues.
+
+\section{Project History}
+
+JacORB originated in 1995 (was it 1996?) in the CS department at Freie
+Universit{\"a}t Berlin (FUB). It evolved from a small Java RPC library and a
+stub compiler that would process Java interfaces. This predecessor was
+written --- most for fun and out of curiosity --- by Boris Bokowski
+and Gerald Brose because at that time no Java RMI was available. The
+two of us then realized how close the Java interface syntax was to
+CORBA IDL, so we wrote an IDL grammar for our parser generator and
+moved to GIOP and IIOP as the transport protocol. It was shortly
+before Christmas 1996 when the first interoperable GIOP request was
+sent form a JacORB client to an IONA Orbix server. For a long time,
+JacORB was the only free (in the GNU sense) Java/CORBA implementation
+available, and it soon enjoyed widespread interest, at first mostly in
+academic projects, but commercial use followed soon after.
+
+For a while, Gerald developed JacORB as a one-man-project until a few
+student projects and master theses started adding to it, most notably
+Reimo Tiedemann's POA implementation, and Nicolas Noffke's
+Implementation Repository and Portable Interceptor implementations.
+Other early contributors were Sebastian M{\"u}ller, who wrote the
+Appligator, and Herbert Kiefer, who added a policy domain service. The
+Appligator and the policy domain service are no longer part of the
+JacORB distribution.
+
+A more recent addition is Alphonse Bendt's implementation of the CORBA
+Notification Services as part of his master's theses. Substantial
+additions to the JacORB core were made by Andr{\'e} Spiegel, who
+contributed OBV and AMI implementations. Other substantial
+contributions to JacORB have been added over time by the team at
+PrismTech UK (Steve Osselton, Nick Cross, Simon McQueen, Jason
+Courage). Still other active contributors are Francisco Reverbel of
+the JBoss team (RMI/IIOP), David Robison, who contributed CSIv2 and
+Phil Mesnier of OCI (\href{http://www.ociweb.com}{http://www.ociweb.com}).
+
+JacORB continues to be used for research at FUB, especially in the
+field of distributed object security. Even though a number of people
+from the core team have left FUB; Gerald is with Projektron BCS
+(\href{http://www.projektron.de}{http://www.projektron.de}), Reimo is
+with CoreMedia (\href{http://www.coremedia.com}{http://www.coremedia.com}),
+Nico and Alphonse are with Xtradyne (\href{http://www.xtradyne.com}
+{http://www.xtradyne.com}) (now part of PrismTech
+(\href{http://www.prismtech.com}{http://www.prismtech.com})) and Andr{\'e}
+Spiegel is now a free-lance developer and consultant
+(\href{http://www.free-software-consulting.com}
+{http://www.free-software-consulting.com}), the JacORB project is still
+rooted at Freie Universit{\"a}t Berlin, which hosts the JacORB web and CVS server.
+
+Due to the limited number of developers, the philosophy around the
+development has never been to achieve feature-completeness beyond the
+core 90\%, but standards compliance and quality.  (e.g., JacORB 2.0
+does not come with a PolicyManager).  Brand-new and less widely-used
+features had to wait until the specification had reached a minimum
+maturity --- or until someone offered project funding.
+
+\section{Support}
+
+The JacORB core team and the user community together provide best
+effort support over our mailing lists.
+
+To enquire about commercial support, please send email to {\tt
+  info@jacorb.com} if you want members of the JacORB core team.
+Commercial support is also available from PrismTech and OCI.
+
+\section{Contributing --- Donations}
+
+In essence, the early development years were entirely funded by public
+research. JacORB did receive some sponsoring over the years, but not
+as much as would have been desirable. A few development tasks that
+would otherwise not have been possible could be payed for, but more
+would have been possible --- and still is.
+
+If you feel that returning some of the value created by the use of
+Open Source software in your company is a wise investment in the
+future of that the software (maintenance, quality improvements,
+further development) in the future, then you should contact us about
+donations.
+
+Buying hardware and sending it to us is one option. It is also
+possible to directly donate money to the JacORB project at Freie
+Universit{\"a}t Berlin. If approval for outright donations is
+difficult to obtain at your company, we can send you an invoice for,
+e.g.., CORBA consulting.
+
+\section{Contributing --- Development}
+
+If you want to contribute to the development of the software directly,
+you should do the following:
+
+\begin{itemize}
+\item download JacORB and run the software to gain some first-hand
+  expertise first
+\item read this document and other sources of CORBA documentation,
+  such as \cite{Brose2001a}, and the OMG's set of specifications
+  (CORBA spec., IDL/Java language mapping)
+\item start reading the code
+\item subscribe to the {\tt jacorb-developer} mailing list to share
+  your expertise
+\item contact us to get subscribed to the core team's mailing list and
+  gain CVS access
+\item read the coding guide line
+\item contribute code and test cases
+\end{itemize}
+
+\section{Limitations, Feedback}
+
+A few limitations and known bugs (list is incomplete):
+
+\begin{itemize}
+    \item the IDL compiler does not support
+    \begin{itemize}
+        \item the {\tt context} construct
+    \end{itemize}
+    \item the API documentation and this document are incomplete.
+\end{itemize}
+
+\subsection{Feedback, Bug reports}
+
+For bug reporting, please use our Bugzilla bug tracking system available at
+\href{http://www.jacorb.org/bugzilla}{http://www.jacorb.org/bugzilla}.  Please
+send problems as well as criticism and experience reports to our developer
+mailing list available from
+\href{http://www.jacorb.org/contact.html}{http://www.jacorb.org/contact.html}.
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "../ProgrammingGuide"
+%%% End:

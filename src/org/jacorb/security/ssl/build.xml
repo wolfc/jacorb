@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE project [ <!ENTITY common SYSTEM "../../../../../etc/common.xml"> ]>
+
+<project name="ssl" default="all" basedir="../../../../..">
+
+  <!-- ==================================================== -->
+  <!--               ssl build file                         -->
+  <!-- $Id: build.xml,v 1.10 2008-11-18 14:18:45 nick.cross Exp $ -->
+  <!-- ==================================================== -->
+
+   &common;
+
+   <target name="all" depends="init">
+      <antcall target="jacorb-javac">
+         <param name="javac-includes" value="org/jacorb/security/ssl/*.java"/>
+      </antcall>
+      <ant antfile="${src}/org/jacorb/security/ssl/sun_jsse/build.xml" dir="${basedir}"/>
+   </target>
+</project>

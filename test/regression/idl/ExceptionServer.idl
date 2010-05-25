@@ -1,0 +1,29 @@
+
+#include "Tests.idl"
+
+module org
+{
+   module jacorb
+   {
+      module test
+      {
+          exception MyUserException
+          {
+              string message;
+          };
+
+         interface ExceptionServer
+         {
+            void throwRuntimeException(in string message);
+
+            void throwUserExceptionWithMessage1(in long f1, in string f2)
+               raises (NonEmptyException);
+
+            void throwUserException() raises (MyUserException);
+
+            void throwUserExceptionWithMessage2(in string reason, in string message)
+               raises (MyUserException);
+         };
+      };
+   };
+};

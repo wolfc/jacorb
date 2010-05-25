@@ -1,0 +1,22 @@
+module org {
+    module jacorb {
+        module test {
+            module bugs {
+                module bug384
+                {
+                    interface A {};
+
+                    interface B : A {};
+
+                    interface TestObject
+                    {
+                        typedef sequence<A> Chain;
+
+                        void ping();
+                        Chain testMarshall();
+                    };
+                };
+            };
+        };
+    };
+};
