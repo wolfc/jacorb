@@ -1,0 +1,59 @@
+The files jacorb.jar and idl.jar in this directory are a patched version of 
+JacORB 2.3.1. The patched libraries identify themselves as 
+
+        JacORB V 2.3.1 (JBoss patch01), www.jacorb.org
+
+IMPORTANT:  This build does _not_ have the OTS classes,
+       they have been removed to avoid conflicting with the jbossjts-jacorb.jar
+
+Instructions for generating these files are included below.
+
+Kudos to the JacORB team, for this great open-source ORB.
+
+Special thanks to:
+
+        Gerald Brose, for creating JacORB
+
+        Andre Spiegel, for his work on OBV in JacORB
+
+Francisco
+
+---------------------------------------------------------------------------
+
+ *** How to generate the jacorb.jar and idl.jar files in this directory ***
+
+(1) Obtain a JacORB 2.3.1 source tree, with the following command:
+
+cvs -d :pserver:anonymous@www.jacorb.org/cvsroot/jacorb checkout -r RELEASE_2_3_1 JacORB
+
+(2) Apply the following patches from this directory:
+
+cd JacORB
+
+Patch1:         jacorb-2.3.1-version.patch
+
+# This patch resets the port of the primary address to zero when an
+# IORInterceptor adds a TAG_CSI_SEC_MECH_LIST component with transport
+# protection requirements (SSL), as it should be per the CSI v2 specification.
+Patch7:         jacorb-2.3.0-primaddress_port.patch
+
+# JBPAPP-1477 JacORB 2.3.0.jboss5 intermittently hangs during shutdown.
+# Thread dump shows it waiting in RequestController.waitForShutdown(), 
+# presumably beacause it believes there are outstanding requests still 
+# in progress.
+Patch9:         jacorb-2.3.0-CORBA_OBJECT_NOT_EXIST.patch
+
+# This patch removes the OTS classes
+Patch13:        jboss-2.3.1-remove_ots_classes.patch
+
+# read_boolean() now only adjusts positions if the chunk_end_pos == pos,
+# no longer calling handle_chunking(). The problem with handle_chunking()
+# is that it aligns the current position and this can cause CDRInputStream
+# to "skip" valid boolean values, as those are not padded.
+Patch14:        jboss-2.3.1-read_boolean.patch
+
+(3) Build with the following command:
+
+ant -Ddebug=off all doc
+
+(If you want a debug version use just 'ant all doc')
