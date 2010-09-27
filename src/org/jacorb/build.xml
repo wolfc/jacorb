@@ -1,0 +1,98 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE project [ <!ENTITY common SYSTEM "file:../../../etc/common.xml"> ]>
+
+<project name="jacorb" default="all" basedir="../../..">
+
+  <!-- ==================================================== -->
+  <!--            JacORB ORB build file                         -->
+  <!-- $Id: build.xml,v 1.36 2007/02/10 17:56:16 brose Exp $ -->
+  <!-- ==================================================== -->
+
+  &common;
+
+   <!-- all -->
+
+   <target name="all" depends="init,load-taskdef,subdirs" />
+
+   <!-- Do all the template copying first to avoid cross-dependacy problems -->
+   <target name="template">
+      <ant antfile="${src}/org/jacorb/util/build.xml" dir="${basedir}" target="template"/>
+      <ant antfile="${src}/org/jacorb/orb/build.xml" dir="${basedir}" target="template"/>
+   </target>
+
+   <target name="subdirs" depends="template,config,util,orb,poa,imr,ir,naming,events,dds,concurrency,transaction,tracing,transport,security,notification">
+   </target>
+
+   <target name="config" depends="init">
+      <ant antfile="${src}/org/jacorb/config/build.xml" dir="${basedir}"/>
+   </target>
+
+
+   <target name="util" depends="init">
+      <ant antfile="${src}/org/jacorb/util/build.xml" dir="${basedir}"/>
+   </target>
+
+   <target name="poa" depends="init" >
+      <ant antfile="${src}/org/jacorb/poa/build.xml" dir="${basedir}"/>
+   </target>
+
+   <target name="ir" depends="init">
+      <ant antfile="${src}/org/jacorb/ir/build.xml"  dir="${basedir}"/>
+   </target>
+
+   <target name="transaction" depends="init">
+      <ant antfile="${src}/org/jacorb/transaction/build.xml" dir="${basedir}"/>
+   </target>
+
+   <target name="collection" depends="init">
+      <ant antfile="${src}/org/jacorb/collection/build.xml" dir="${basedir}"/>
+   </target>
+
+   <target name="concurrency" depends="init">
+      <ant antfile="${src}/org/jacorb/concurrency/build.xml" dir="${basedir}"/>
+   </target>
+
+   <target name="orb" depends="init">
+      <ant antfile="${src}/org/jacorb/orb/build.xml" dir="${basedir}"/>
+   </target>
+
+   <target name="imr"  depends="init">
+      <ant antfile="${src}/org/jacorb/imr/build.xml" dir="${basedir}"/>
+   </target>
+
+   <target name="naming" depends="init">
+      <ant antfile="${src}/org/jacorb/naming/build.xml" dir="${basedir}"/>
+   </target>
+
+   <target name="security" depends="init">
+      <ant antfile="${src}/org/jacorb/security/build.xml" dir="${basedir}"/>
+   </target>
+
+   <target name="events" depends="init">
+      <ant antfile="${src}/org/jacorb/events/build.xml" dir="${basedir}"/>
+   </target>
+
+   <target name="dds" depends="init">
+          <ant antfile="${src}/org/jacorb/dds/build.xml" dir="${basedir}"/>
+   </target>
+
+   <target name="tracing" depends="init">
+      <ant antfile="${src}/org/jacorb/util/tracing/build.xml" dir="${basedir}"/>
+   </target>
+
+   <target name="transport" depends="init">
+      <ant antfile="${src}/org/jacorb/transport/build.xml" dir="${basedir}"/>
+   </target>
+
+   <target name="notification" depends="init">
+      <ant antfile="${src}/org/jacorb/notification/build.xml" dir="${basedir}"/>
+   </target>
+
+   <target name="clean" depends="init">
+      <ant antfile="${src}/org/jacorb/util/build.xml" target="clean" dir="${basedir}"/>
+      <ant antfile="${src}/org/jacorb/orb/build.xml" target="clean" dir="${basedir}"/>
+      <ant antfile="${src}/org/jacorb/idl/build.xml" target="clean" dir="${basedir}" />
+   </target>
+
+</project>

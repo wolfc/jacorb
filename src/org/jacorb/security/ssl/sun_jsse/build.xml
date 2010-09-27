@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE project [ <!ENTITY common SYSTEM "file:../../../../../../etc/common.xml"> ]>
+
+<project name="sun_jsse" default="all" basedir="../../../../../..">
+
+  <!-- ==================================================== -->
+  <!--                 jsse build file                      -->
+  <!-- $Id: build.xml,v 1.9 2004/11/18 17:29:10 nicolas Exp $ -->
+  <!-- ==================================================== -->
+
+   &common;
+
+
+   <target name="all" depends="init">
+      <antcall target="jacorb-javac">
+         <param name="javac-includes" value="org/jacorb/security/ssl/sun_jsse/*.java"/>
+      </antcall>
+   </target>
+
+   <target name="patch" depends="init">
+           <property name="local" value="${dirs.base}/src/org/jacorb/security/ssl/sun_jsse"/>
+           <patch patchfile="${local}/SSLSocketFactory.java.patch"
+                  originalfile="${local}/SSLSocketFactory.java"
+                  backups="yes" />
+           <patch patchfile="${local}/SSLServerSocketFactory.java.patch"
+                  originalfile="${local}/SSLServerSocketFactory.java"
+                  backups="yes" />
+   </target>
+
+   <target name="unpatch" depends="init">
+       <property name="local"
+            value="${dirs.base}/src/org/jacorb/security/ssl/sun_jsse"/>
+           <patch patchfile="${local}/SSLSocketFactory.java.patch"
+                  originalfile="${local}/SSLSocketFactory.java"
+                  backups="no"
+                  reverse="yes" />
+           <patch patchfile="${local}/SSLServerSocketFactory.java.patch"
+                  originalfile="${local}/SSLServerSocketFactory.java"
+                  backups="no"
+                  reverse="yes" />
+   </target>
+</project>

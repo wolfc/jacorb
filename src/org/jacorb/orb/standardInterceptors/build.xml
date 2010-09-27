@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE project [ <!ENTITY common SYSTEM "file:../../../../../etc/common.xml"> ]>
+
+<project name="standardInterceptor" default="all" basedir="../../../../..">
+
+  <!-- ==================================================== -->
+  <!--      JacORB Standard Interceptors build file         -->
+  <!-- $Id: build.xml,v 1.10 2003/10/30 14:14:57 brose Exp $ -->
+  <!-- ==================================================== -->
+
+   &common;
+
+
+   <target name="all" depends="init">
+      <available classname="org.ietf.jgss.GSSManager" property="jgss.present" />
+      <antcall target="jacorb-javac">
+         <param name="javac-includes" value="org/jacorb/orb/standardInterceptors/*.java"/>
+         <param name="javac-excludes" value="org/jacorb/orb/standardInterceptors/SASComponentInterceptor.java"/>
+      </antcall>
+      <antcall target="compile-sas"/>
+   </target>
+
+
+   <target name="compile-sas" if="jgss.present">
+      <antcall target="jacorb-javac">
+         <param name="javac-includes" value="org/jacorb/orb/standardInterceptors/SASComponentInterceptor.java"/>
+      </antcall>
+   </target>
+</project>

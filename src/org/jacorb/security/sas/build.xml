@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE project [ <!ENTITY common SYSTEM "file:../../../../../etc/common.xml"> ]>
+
+<project name="sas" default="all" basedir="../../../../..">
+
+  <!-- ==================================================== -->
+  <!--                 sas build file                       -->
+  <!-- $Id: build.xml,v 1.7 2006/07/27 10:55:21 nick.cross Exp $ -->
+  <!-- ==================================================== -->
+
+   &common;
+
+   <target name="check-props">
+      <available classname="org.ietf.jgss.GSSManager" property="jgss.present" />
+      <available classname="com.tagish.auth.Utils" property="jaas.modules.present" />
+   </target>
+
+
+   <target name="all" depends="init,check-props,compile,jaas" />
+
+
+   <target name="compile" if="jgss.present">
+      <antcall target="jacorb-javac">
+         <param name="javac-includes" value="org/jacorb/security/sas/*.java"/>
+         <param name="javac-excludes" value="org/jacorb/security/sas/NT_*.java"/>
+      </antcall>
+   </target>
+
+
+   <target name="jaas" if="jaas.modules.present">
+      <antcall target="jacorb-javac">
+         <param name="javac-includes" value="org/jacorb/security/sas/NT_*.java"/>
+      </antcall>
+   </target>
+</project>

@@ -1,0 +1,79 @@
+The files jacorb.jar and idl.jar in this directory are a patched version of 
+JacORB 2.3.0. The patched libraries identify themselves as 
+
+        JacORB V 2.3.0 (JBoss patch 5), www.jacorb.org
+
+Instructions for generating these files are included below.
+
+Kudos to the JacORB team, for this great open-source ORB.
+
+Special thanks to:
+
+        Gerald Brose, for creating JacORB
+
+        Andre Spiegel, for his work on OBV in JacORB
+
+Francisco
+
+---------------------------------------------------------------------------
+
+ *** How to generate the jacorb.jar and idl.jar files in this directory ***
+
+(1) Obtain a JacORB 2.3.0 source tree, with the following command:
+
+cvs -d :pserver:anonymous@www.jacorb.org/cvsroot/jacorb checkout -r RELEASE_2_3_0 JacORB
+
+(2) Apply the following patches from this directory:
+
+cd JacORB
+
+Patch1:         jacorb-2.3.0-version.patch
+# The size of a chunk should not include any bytes of padding that might have
+# been added after the chunk for alignment purposes. This patch allows JacORB 
+# to interoperate with the ORB in Sun's JDK 1.5 with chunking of custom RMI
+# valuetypes enabled (jacorb.interop.chunk_custom_rmi_valuetypes=on), as it 
+# should be per the CORBA spec. 
+Patch2:         jacorb-2.3.0-chunk_size.patch
+# In handle_chunking: change to distinguish a null value tag from
+# a chunk size tag (the latter must be positive).
+# In read_untyped_value and readChunkSizeTag: changes for correctness (to 
+# ensure that chunk_end_pos is set to -1 if we are not within a chunk) and 
+# for clarity.
+Patch3:         jacorb-2.3.0-null_value_tag.patch
+# Fix for bug #782 in JacORB's bugzilla system:
+# The creation of an SSLServerSocket fails when JacORB 2.3.0 uses the JSSE
+# included in Sun's JDK 1.4 and later releases. The problem is in the wrapper
+# class JSSEUtil, which causes an IllegalAccessException to be thrown.
+Patch4:         jacorb-2.3.0-JSSE.patch
+# Fix for bug #783 in JacORB's bugzilla system:
+# Server throws CORBA.INTERNAL (ArrayIndexOutOfBoundsException) when a client
+# uses an IOR with a component tagged with TAG_CSI_SEC_MECH_LIST. When the 
+# current implementation of the method 
+# org.jacorb.orb.iiop.IIOPProfile.getTLSPortFromCSIComponent finds an IOR
+# component that is tagged with TAG_CSI_SEC_MECH_LIST and has a non-empty list
+# of security mechanisms, it assumes that the first mechanism listed has a 
+# transport component tagged with TAG_TLS_SEC_TRANS. It tries to access the 
+# data of the presumed TLS_SEC_TRANS component, without first checking the 
+# component's tag. If this tag is TAG_NULL_TAG rather than TAG_TLS_SEC_TRANS, 
+# then an ArrayIndexOutOfBoundsException occurs.
+Patch5:         jacorb-2.3.0-IIOP.patch
+# Fix for NPE on shutdown
+Patch6:         jacorb-2.3.0-IIOP_Shutdown.patch
+# This patch resets the port of the primary address to zero when an
+# IORInterceptor adds a TAG_CSI_SEC_MECH_LIST component with transport
+# protection requirements (SSL), as it should be per the CSI v2 specification.
+Patch7:         jacorb-2.3.0-primaddress_port.patch
+# The SSL profile check is unnecessary and incorrect, as it should also check
+# for the presence of the TAG_TLS_SEC_TRANS tag in the IIOPProfile.
+# By not doing so, it causes JacORB not to open SSL connections when the
+# server-side IORs contain only the TAG_TLS_SEC_TRANS tag. We can just
+# eliminate this verification since the remaining method body already performs
+# the necessary checks correctly.
+Patch8:         jacorb-2.3.0-ssl_verification.patch
+
+
+(3) Build with the following command:
+
+ant -Ddebug=off all doc
+
+(If you want a debug version use just 'ant all doc')

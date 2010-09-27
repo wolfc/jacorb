@@ -1,0 +1,8 @@
+#!/bin/sh 
+
+# JacORB Notification Service
+
+# Starts the JacORB Notification Service
+
+export CLASSPATH=../lib/backport-util-concurrent.jar:../lib/picocontainer-1.2.jar:../lib/antlr-2.7.2.jar
+jaco org.jacorb.notification.ConsoleMain "$@"
