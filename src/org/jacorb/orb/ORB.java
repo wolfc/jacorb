@@ -48,6 +48,7 @@ import org.omg.CORBA.ORBPackage.InvalidName;
 import org.omg.CORBA.portable.ValueFactory;
 import org.omg.CORBA.portable.BoxedValueHelper;
 import org.omg.CORBA.portable.StreamableValue;
+import org.omg.CSIIOP.*;
 import org.omg.Messaging.*;
 import org.omg.PortableInterceptor.*;
 import org.omg.PortableServer.POAManagerPackage.AdapterInactive;
@@ -775,9 +776,20 @@ public final class ORB
             }
         }
 
-        // add GIOP 1.0 profile if necessary
-
+        // patch the primary address port if an interceptor added a CSI component with
+        // transport protection requirements in the IIOPProfile.
         IIOPProfile iiopProfile = findIIOPProfile(profiles);
+        if(iiopProfile != null)
+        {
+            TaggedComponentList components = 
+                (TaggedComponentList)componentMap.get(ObjectUtil.newInteger(TAG_INTERNET_IOP.value));
+            if(this.isSSLRequiredInComponentList(components))
+            {
+                iiopProfile.patchPrimaryAddress(new IIOPAddress(null,0));
+            }
+        }
+
+        // add GIOP 1.0 profile if necessary
         if ( (iiopProfile != null)
              && ( this.giopMinorVersion == 0 || this.giopAdd_1_0_Profiles ))
         {
@@ -824,6 +836,55 @@ public final class ORB
         }
 
         return new IOR(repId, tps);
+    }
+
+    /**
+     * Indicates whether the given <code>TaggedComponentList</code> object contains a
+     * TAG_CSI_SEC_MECH_LIST component with transport protection requirements.
+     *
+     * @param components a <code>TaggedComponentList</code> object.
+     * @return <code>true</code> if the given <code>TaggedComponentList</code> contains
+     * a TAG_CSI_SEC_MECH_LIST component with transport protection requirements;
+     * <code>false</code> otherwise.
+     */
+    public boolean isSSLRequiredInComponentList(TaggedComponentList components)
+    {
+        int minimum_options =
+            Integrity.value |
+            Confidentiality.value |
+            DetectReplay.value |
+            DetectMisordering.value;
+
+        if(components == null)
+        {
+            return false;
+        }
+
+        CompoundSecMechList csmList =
+            (CompoundSecMechList)components.getComponent(
+                                            TAG_CSI_SEC_MECH_LIST.value,
+                                            CompoundSecMechListHelper.class);
+
+        if (csmList != null && csmList.mechanism_list.length > 0 &&
+                csmList.mechanism_list[0].transport_mech.tag ==
+                                                    TAG_TLS_SEC_TRANS.value)
+        {
+            byte[] tlsSecTransData =
+                csmList.mechanism_list[0].transport_mech.component_data;
+            CDRInputStream in =
+                new CDRInputStream((org.omg.CORBA.ORB)null, tlsSecTransData);
+            try
+            {
+                in.openEncapsulatedArray();
+                TLS_SEC_TRANS tls = TLS_SEC_TRANSHelper.read(in);
+                return (tls.target_requires & minimum_options) != 0;
+            }
+            catch ( Exception ex )
+            {
+                throw new INTERNAL(ex.toString());
+            }
+        }
+        return false;
     }
 
     private TaggedProfile createMultipleComponentsProfile
