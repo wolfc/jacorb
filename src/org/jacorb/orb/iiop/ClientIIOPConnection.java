@@ -432,10 +432,10 @@ public class ClientIIOPConnection
     private void checkSSL()
     {
         // Check if SSL profile
-        if (((IIOPProfile)profile).getSSL () == null)
-        {
-            return;
-        }
+        //if (((IIOPProfile)profile).getSSL () == null)
+        //{
+        //    return;
+        //}
 
         CompoundSecMechList sas;
         try
