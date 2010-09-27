@@ -47,7 +47,7 @@ import org.omg.IOP.TaggedProfile;
 
 /**
  * @author Gerald Brose,  1999
- * @version $Id: CDROutputStream.java,v 1.122 2006/11/30 13:11:07 alphonse.bendt Exp $
+ * @version $Id: CDROutputStream.java,v 1.123 2007/04/26 23:07:26 francisco Exp $
  *
  * A stream for CDR marshalling.
  *
@@ -2484,9 +2484,9 @@ public class CDROutputStream
     {
         if (!write_special_value (value))
         {
+            write_previous_chunk_size();
             check(7,4);
             getValueMap().put (value, ObjectUtil.newInteger(pos));
-            write_previous_chunk_size();
             if ((value instanceof org.omg.CORBA.portable.IDLEntity) ||
                 (value instanceof java.lang.String))
             {
@@ -2635,7 +2635,6 @@ public class CDROutputStream
      */
     private void write_value_header(final String[] repository_ids)
     {
-        write_previous_chunk_size();
         if (repository_ids != null)
         {
             if( repository_ids.length > 1 )
@@ -2670,7 +2669,6 @@ public class CDROutputStream
     {
         if (codebase != null)
         {
-            write_previous_chunk_size();
             if ( repository_ids != null )
             {
                 if( repository_ids.length > 1 )
@@ -2718,6 +2716,7 @@ public class CDROutputStream
     private void write_value_internal(final java.io.Serializable value,
                                        final String repository_id)
     {
+    	write_previous_chunk_size();
         check(7,4);
         getValueMap().put(value, ObjectUtil.newInteger(pos));
 
